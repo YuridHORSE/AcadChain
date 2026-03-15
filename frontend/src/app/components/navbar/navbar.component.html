@@ -1,0 +1,79 @@
+<!-- src/app/components/navbar/navbar.component.html -->
+<nav class="navbar navbar-expand-lg navbar-dark" style="background:#1a3a5c;">
+  <div class="container">
+
+    <!-- Brand -->
+    <a class="navbar-brand fw-bold fs-4" routerLink="/">
+      🎓 AcadChain
+    </a>
+
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+            data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav me-auto">
+
+        <li class="nav-item">
+          <a class="nav-link" routerLink="/verify" routerLinkActive="active">
+            🔍 Verify Credential
+          </a>
+        </li>
+
+        <li class="nav-item">
+          <a class="nav-link" routerLink="/search" routerLinkActive="active">
+            🔎 Employer Search
+          </a>
+        </li>
+
+        @if (wallet.isInstitution()) {
+          <li class="nav-item">
+            <a class="nav-link" routerLink="/issue" routerLinkActive="active">
+              📜 Issue Credential
+            </a>
+          </li>
+        }
+
+      </ul>
+
+      <!-- Right side -->
+      <div class="d-flex align-items-center gap-2">
+
+        @if (wallet.isInstitution()) {
+          <span class="badge bg-warning text-dark px-2 py-1">
+            🏛️ {{ wallet.institutionName() }}
+          </span>
+        }
+
+        @if (wallet.networkName() !== 'Not connected') {
+          <span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-1">
+            {{ wallet.networkName() }}
+          </span>
+        }
+
+        @if (!wallet.connectedAddress()) {
+          <button class="btn btn-warning btn-sm fw-semibold"
+                  (click)="connect()" [disabled]="isConnecting">
+            @if (isConnecting) {
+              <span class="spinner-border spinner-border-sm me-1"></span>
+            }
+            🦊 Connect MetaMask
+          </button>
+        } @else {
+          <span class="badge bg-light text-dark font-monospace px-2 py-1">
+            {{ shortAddress(wallet.connectedAddress()!) }}
+          </span>
+          <button class="btn btn-outline-light btn-sm" (click)="disconnect()">
+            Disconnect
+          </button>
+        }
+
+        @if (errorMsg) {
+          <span class="text-warning small">⚠️ {{ errorMsg }}</span>
+        }
+
+      </div>
+    </div>
+  </div>
+</nav>

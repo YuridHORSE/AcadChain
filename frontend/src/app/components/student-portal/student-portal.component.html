@@ -1,0 +1,166 @@
+<!-- src/app/components/student-portal/student-portal.component.html -->
+<div class="container py-5">
+
+  <div class="text-center mb-5">
+    <h1 class="fw-bold display-6">🔎 Employer Credential Search</h1>
+    <p class="text-muted lead">
+      Verify a job applicant's academic credentials using their student details — no Credential ID needed.
+    </p>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-md-7">
+
+      @if (!result() && !notFound()) {
+        <div class="card shadow border-0">
+          <div class="card-header text-white fw-semibold py-3" style="background:#1a3a5c;">
+            🔎 Search Credential by Student Details
+          </div>
+          <div class="card-body p-4">
+            <form [formGroup]="form">
+
+              <!-- Credential Type -->
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Credential Type <span class="text-danger">*</span></label>
+                <select class="form-select" formControlName="credentialType"
+                        [class.is-invalid]="isInvalid('credentialType')">
+                  @for (opt of credentialTypes; track opt.value) {
+                    <option [value]="opt.value">{{ opt.label }}</option>
+                  }
+                </select>
+              </div>
+
+              <!-- Student ID -->
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Student ID <span class="text-danger">*</span></label>
+                <input type="text" class="form-control"
+                       formControlName="studentId"
+                       [class.is-invalid]="isInvalid('studentId')"
+                       placeholder="e.g. 2020-12345" />
+                @if (isInvalid('studentId')) {
+                  <div class="invalid-feedback">Required.</div>
+                }
+              </div>
+
+              <!-- Program -->
+              <div class="mb-3">
+                <label class="form-label fw-semibold">Degree / Program <span class="text-danger">*</span></label>
+                <input type="text" class="form-control"
+                       formControlName="program"
+                       [class.is-invalid]="isInvalid('program')"
+                       placeholder="e.g. BS Computer Science" />
+                @if (isInvalid('program')) {
+                  <div class="invalid-feedback">Required.</div>
+                }
+              </div>
+
+              <!-- Institution -->
+              <div class="mb-4">
+                <label class="form-label fw-semibold">Institution Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control"
+                       formControlName="institutionName"
+                       [class.is-invalid]="isInvalid('institutionName')"
+                       placeholder="e.g. UP Diliman" />
+                <div class="form-text">Must match exactly how it was registered in AcadChain.</div>
+                @if (isInvalid('institutionName')) {
+                  <div class="invalid-feedback">Required.</div>
+                }
+              </div>
+
+              @if (errorMsg()) {
+                <div class="alert alert-danger">⚠️ {{ errorMsg() }}</div>
+              }
+
+              <button type="button" class="btn btn-lg w-100 fw-semibold text-white"
+                      style="background:#1a3a5c;"
+                      (click)="search()" [disabled]="isSearching()">
+                @if (isSearching()) {
+                  <span class="spinner-border spinner-border-sm me-2"></span>
+                  Searching Blockchain...
+                } @else {
+                  🔎 Search Credential
+                }
+              </button>
+
+            </form>
+          </div>
+        </div>
+      }
+
+      <!-- Result Found -->
+      @if (result()) {
+        <div class="card shadow border-0">
+          <div class="card-header text-white fw-semibold py-3" style="background:#1a3a5c;">
+            📜 Credential Found
+          </div>
+          <div class="card-body p-4">
+
+            <div class="alert alert-success fw-bold text-center mb-4">
+              ✅ VERIFIED — This credential is officially registered on the blockchain
+            </div>
+
+            <div class="text-center mb-3">
+              <span class="badge bg-primary fs-6 px-3 py-2">
+                {{ getTypeLabel(result()!.credentialType) }}
+              </span>
+            </div>
+
+            <dl class="row">
+              <dt class="col-sm-4 text-muted">Student Name</dt>
+              <dd class="col-sm-8 fw-semibold fs-5">{{ result()?.studentName }}</dd>
+
+              <dt class="col-sm-4 text-muted">Student ID</dt>
+              <dd class="col-sm-8 font-monospace">{{ result()?.studentId }}</dd>
+
+              <dt class="col-sm-4 text-muted">Program</dt>
+              <dd class="col-sm-8">{{ result()?.program }}</dd>
+
+              <dt class="col-sm-4 text-muted">Institution</dt>
+              <dd class="col-sm-8 fw-semibold">{{ result()?.institution }}</dd>
+
+              <dt class="col-sm-4 text-muted">Year Graduated</dt>
+              <dd class="col-sm-8">{{ result()?.yearGraduated }}</dd>
+
+              @if (result()?.honors) {
+                <dt class="col-sm-4 text-muted">Honors</dt>
+                <dd class="col-sm-8">
+                  <span class="badge bg-warning text-dark px-2 py-1">🏅 {{ result()?.honors }}</span>
+                </dd>
+              }
+
+              <dt class="col-sm-4 text-muted">Credential ID</dt>
+              <dd class="col-sm-8 font-monospace">#{{ result()?.tokenId }}</dd>
+
+              <dt class="col-sm-4 text-muted">Issued At</dt>
+              <dd class="col-sm-8">{{ result()?.issuedAt ? formatDate(result()!.issuedAt) : '' }}</dd>
+            </dl>
+
+          </div>
+        </div>
+
+        <div class="text-center mt-4">
+          <button class="btn btn-outline-secondary" (click)="reset()">🔄 Search Again</button>
+        </div>
+      }
+
+      <!-- Not Found -->
+      @if (notFound()) {
+        <div class="card border-danger shadow-sm">
+          <div class="card-body text-center py-5">
+            <div class="display-1 mb-3">🚨</div>
+            <h4 class="text-danger fw-bold">No Credential Found</h4>
+            <p class="text-muted">
+              No matching credential was found in the AcadChain registry.
+              Treat this document with caution.
+            </p>
+            <p class="text-muted small">
+              Make sure the Institution Name matches exactly as registered (case-sensitive).
+            </p>
+            <button class="btn btn-outline-secondary mt-2" (click)="reset()">🔄 Try Again</button>
+          </div>
+        </div>
+      }
+
+    </div>
+  </div>
+</div>

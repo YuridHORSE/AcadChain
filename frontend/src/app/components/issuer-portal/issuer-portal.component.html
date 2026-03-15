@@ -1,0 +1,190 @@
+<!-- src/app/components/issuer-portal/issuer-portal.component.html -->
+<div class="container py-5">
+
+  @if (!wallet.connectedAddress()) {
+    <div class="row justify-content-center">
+      <div class="col-md-6 text-center py-5">
+        <div class="display-1 mb-3">🦊</div>
+        <h4 class="fw-bold">Connect Your Institution Wallet</h4>
+        <p class="text-muted">Connect an authorized institutional MetaMask wallet to issue credentials.</p>
+      </div>
+    </div>
+  }
+
+  @if (wallet.connectedAddress() && !wallet.isInstitution()) {
+    <div class="row justify-content-center">
+      <div class="col-md-6">
+        <div class="alert alert-warning text-center py-4">
+          <div class="fs-1 mb-2">🚫</div>
+          <h5 class="fw-bold">Institution Not Authorized</h5>
+          <p class="mb-0">Wallet <code class="small">{{ wallet.connectedAddress() }}</code> is not registered.
+          Contact the AcadChain administrator.</p>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (wallet.isInstitution()) {
+    <div class="row justify-content-center">
+      <div class="col-md-8">
+
+        <div class="alert alert-info d-flex align-items-center gap-2 mb-4">
+          <span class="fs-4">🏛️</span>
+          <div>
+            <strong>Issuing as: {{ wallet.institutionName() }}</strong>
+            <div class="small text-muted">{{ wallet.connectedAddress() }}</div>
+          </div>
+        </div>
+
+        <!-- Success -->
+        @if (successResult()) {
+          <div class="card border-success shadow mb-4">
+            <div class="card-body text-center py-4">
+              <div class="display-4 mb-2">🎓</div>
+              <h4 class="text-success fw-bold">Credential Issued Successfully!</h4>
+              <p class="text-muted">Permanently recorded on the blockchain.</p>
+
+              <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                  <div class="bg-light rounded p-3">
+                    <div class="text-muted small">Credential ID</div>
+                    <div class="fw-bold fs-4 font-monospace">#{{ successResult()?.tokenId }}</div>
+                  </div>
+                </div>
+                <div class="col-md-8">
+                  <div class="bg-light rounded p-3">
+                    <div class="text-muted small">Transaction Hash</div>
+                    <div class="font-monospace small text-truncate">{{ successResult()?.txHash }}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="alert alert-primary text-start mb-3">
+                <strong>📱 Verification URL (print as QR on diploma):</strong><br/>
+                <code class="small">{{ successResult()?.verifyUrl }}</code>
+              </div>
+
+              <a [href]="sepoliaUrl(successResult()?.txHash ?? '')" target="_blank"
+                 class="btn btn-outline-success me-2">🔗 View on Etherscan</a>
+              <button class="btn btn-primary" (click)="reset()">📜 Issue Another</button>
+            </div>
+          </div>
+        }
+
+        <!-- Form -->
+        @if (!successResult()) {
+          <div class="card shadow border-0">
+            <div class="card-header text-white fw-semibold py-3" style="background:#1a3a5c;">
+              📜 Issue New Academic Credential
+            </div>
+            <div class="card-body p-4">
+              <form [formGroup]="form">
+
+                <!-- Credential Type -->
+                <div class="mb-3">
+                  <label class="form-label fw-semibold">Credential Type <span class="text-danger">*</span></label>
+                  <select class="form-select" [class.is-invalid]="isInvalid('credentialType')"
+                          formControlName="credentialType">
+                    @for (opt of credentialTypes; track opt.value) {
+                      <option [value]="opt.value">{{ opt.label }}</option>
+                    }
+                  </select>
+                </div>
+
+                <!-- Student Name & ID -->
+                <div class="row g-3 mb-3">
+                  <div class="col-md-7">
+                    <label class="form-label fw-semibold">Student Full Name <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control"
+                           [class.is-invalid]="isInvalid('studentName')"
+                           formControlName="studentName" placeholder="e.g. Juan Dela Cruz" />
+                    @if (isInvalid('studentName')) { <div class="invalid-feedback">Required.</div> }
+                  </div>
+                  <div class="col-md-5">
+                    <label class="form-label fw-semibold">Student ID <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control"
+                           [class.is-invalid]="isInvalid('studentId')"
+                           formControlName="studentId" placeholder="e.g. 2020-12345" />
+                    @if (isInvalid('studentId')) { <div class="invalid-feedback">Required.</div> }
+                  </div>
+                </div>
+
+                <!-- Student Wallet Address -->
+                <div class="mb-3">
+                  <label class="form-label fw-semibold">
+                    Student Wallet Address <span class="text-danger">*</span>
+                    <span class="badge bg-info-subtle text-info border border-info-subtle ms-2 fw-normal">NFT minted to this wallet</span>
+                  </label>
+                  <input type="text" class="form-control font-monospace"
+                         [class.is-invalid]="isInvalid('studentWalletAddress')"
+                         formControlName="studentWalletAddress"
+                         placeholder="0x..." />
+                  <div class="form-text">The graduate's Ethereum wallet address.</div>
+                  @if (isInvalid('studentWalletAddress')) {
+                    <div class="invalid-feedback">A valid 0x Ethereum address is required.</div>
+                  }
+                </div>
+
+                <!-- Program -->
+                <div class="mb-3">
+                  <label class="form-label fw-semibold">Degree / Program <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control"
+                         [class.is-invalid]="isInvalid('program')"
+                         formControlName="program" placeholder="e.g. BS Computer Science" />
+                  @if (isInvalid('program')) { <div class="invalid-feedback">Required.</div> }
+                </div>
+
+                <!-- Year & Honors -->
+                <div class="row g-3 mb-3">
+                  <div class="col-md-4">
+                    <label class="form-label fw-semibold">Year Graduated <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control"
+                           [class.is-invalid]="isInvalid('yearGraduated')"
+                           formControlName="yearGraduated" placeholder="e.g. 2024" />
+                    @if (isInvalid('yearGraduated')) { <div class="invalid-feedback">Required.</div> }
+                  </div>
+                  <div class="col-md-8">
+                    <label class="form-label fw-semibold">Latin Honors / Awards</label>
+                    <select class="form-select" formControlName="honors">
+                      @for (h of honorsOptions; track h) {
+                        <option [value]="h">{{ h || '— None —' }}</option>
+                      }
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Document Upload -->
+                <div class="mb-4">
+                  <label class="form-label fw-semibold">Credential Document / Image <span class="text-danger">*</span></label>
+                  <input type="file" class="form-control" accept="image/*,.pdf"
+                         (change)="onImageSelected($event)" />
+                  <div class="form-text">Upload diploma scan or certificate photo (max 10MB).</div>
+                  @if (imagePreviewUrl()) {
+                    <img [src]="imagePreviewUrl()" class="img-thumbnail mt-2" style="max-height:160px;" />
+                  }
+                </div>
+
+                @if (errorMsg()) {
+                  <div class="alert alert-danger">⚠️ {{ errorMsg() }}</div>
+                }
+
+                <button type="button" class="btn btn-lg w-100 fw-semibold text-white"
+                        style="background:#1a3a5c;"
+                        (click)="submit()" [disabled]="isSubmitting()">
+                  @if (isSubmitting()) {
+                    <span class="spinner-border spinner-border-sm me-2"></span>
+                    Uploading to IPFS & Minting...
+                  } @else {
+                    🎓 Issue Credential on Blockchain
+                  }
+                </button>
+
+              </form>
+            </div>
+          </div>
+        }
+
+      </div>
+    </div>
+  }
+</div>
